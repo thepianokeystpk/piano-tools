@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Piano Keys Chord Transposition Wizard</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cream: #faf8f3;
+            --charcoal: #2a2a2a;
+            --accent: #c8553d;
+            --accent-light: #e8855f;
+            --sage: #8b9d83;
+            --border: #d4c5b9;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--charcoal);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(200, 85, 61, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 157, 131, 0.04) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--charcoal);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #6b6b6b;
+            font-weight: 400;
+        }
+
+        .section {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-family: 'Crimson Pro', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--charcoal);
+        }
+
+        .key-selector {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .transpose-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .transpose-group label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+        }
+
+        select {
+            padding: 0.75rem 1.25rem;
+            font-size: 1.1rem;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            color: var(--charcoal);
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 120px;
+        }
+
+        select:hover {
+            border-color: var(--accent);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(200, 85, 61, 0.1);
+        }
+
+        .arrow {
+            font-size: 1.5rem;
+            color: var(--accent);
+        }
+
+        .piano-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .piano {
+            position: relative;
+            display: flex;
+            height: 200px;
+            background: var(--charcoal);
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            justify-content: center;
+            overflow-x: auto;
+        }
+
+        .octave {
+            display: flex;
+            position: relative;
+        }
+
+        .key {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .white-key {
+            width: 45px;
+            height: 160px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 0 0 6px 6px;
+            margin: 0 1px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .white-key:hover {
+            background: #f8f8f8;
+            transform: translateY(2px);
+        }
+
+        .white-key.active {
+            background: var(--accent-light);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .black-key {
+            width: 30px;
+            height: 100px;
+            background: var(--charcoal);
+            border: 2px solid #1a1a1a;
+            border-radius: 0 0 4px 4px;
+            position: absolute;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.2rem;
+            padding: 0.5rem 0.2rem;
+            font-size: 0.65rem;
+            color: white;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .black-key:hover {
+            background: #1a1a1a;
+            transform: translateY(2px);
+        }
+
+        .black-key.active {
+            background: var(--accent);
+            border-color: var(--accent-light);
+            color: white;
+        }
+
+        .chord-info {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(200, 85, 61, 0.05), rgba(139, 157, 131, 0.05));
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .chord-name {
+            font-family: 'Crimson Pro', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .chord-notes {
+            font-size: 1.1rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .instruction {
+            text-align: center;
+            color: #999;
+            font-size: 0.95rem;
+            margin-top: 1rem;
+            font-style: italic;
+        }
+
+        .reset-btn {
+            display: block;
+            margin: 1.5rem auto 0;
+            padding: 0.75rem 2rem;
+            background: var(--sage);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: #7a8b74;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 157, 131, 0.3);
+        }
+
+        .play-btn {
+            display: block;
+            margin: 1rem auto 0;
+            padding: 0.75rem 2rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .play-btn:hover {
+            background: var(--accent-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(200, 85, 61, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .go-btn {
+            padding: 0.75rem 2rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .go-btn:hover {
+            background: var(--accent-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(200, 85, 61, 0.3);
+        }
+
+        .go-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .section {
+                padding: 1.5rem;
+            }
+
+            .white-key {
+                width: 32px;
+            }
+
+            .black-key {
+                width: 22px;
+            }
+
+            .key-selector {
+                gap: 1rem;
+            }
+
+            .piano {
+                justify-content: flex-start;
+            }
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem 1rem;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        footer a:hover {
+            color: var(--accent-light);
+            text-decoration: underline;
+        }
+
+        .copyright {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Audio context for playing notes
+        let audioContext = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playNote(note, octave) {
+            initAudio();
+            
+            const noteFrequencies = {
+                'C': 261.63, 'C#': 277.18, 'D': 293.66, 'D#': 311.13,
+                'E': 329.63, 'F': 349.23, 'F#': 369.99, 'G': 392.00,
+                'G#': 415.30, 'A': 440.00, 'A#': 466.16, 'B': 493.88
+            };
+            
+            const baseFreq = noteFrequencies[note];
+            const freq = baseFreq * Math.pow(2, octave - 4);
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = freq;
+            oscillator.type = 'triangle'; // Softer, more piano-like than 'sine'
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 1.5);
+        }
+
+        function playChord(notes) {
+            initAudio();
+            
+            notes.forEach(noteStr => {
+                const note = noteStr.replace(/[0-9]/g, '');
+                const octave = parseInt(noteStr.match(/[0-9]/g)[0]);
+                playNote(note, octave);
+            });
+        }
+
+        // Music theory utilities
+        const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        
+        const WHITE_KEYS = [
+            { note: 'C', octave: 4 },
+            { note: 'D', octave: 4 },
+            { note: 'E', octave: 4 },
+            { note: 'F', octave: 4 },
+            { note: 'G', octave: 4 },
+            { note: 'A', octave: 4 },
+            { note: 'B', octave: 4 },
+            { note: 'C', octave: 5 },
+            { note: 'D', octave: 5 },
+            { note: 'E', octave: 5 },
+            { note: 'F', octave: 5 },
+            { note: 'G', octave: 5 },
+            { note: 'A', octave: 5 },
+            { note: 'B', octave: 5 },
+            { note: 'C', octave: 6 },
+            { note: 'D', octave: 6 },
+            { note: 'E', octave: 6 },
+            { note: 'F', octave: 6 },
+            { note: 'G', octave: 6 }
+        ];
+
+        const BLACK_KEYS = [
+            { note: 'C#', sharp: 'C#', flat: 'Db', octave: 4, position: 0 },
+            { note: 'D#', sharp: 'D#', flat: 'Eb', octave: 4, position: 1 },
+            { note: 'F#', sharp: 'F#', flat: 'Gb', octave: 4, position: 3 },
+            { note: 'G#', sharp: 'G#', flat: 'Ab', octave: 4, position: 4 },
+            { note: 'A#', sharp: 'A#', flat: 'Bb', octave: 4, position: 5 },
+            { note: 'C#', sharp: 'C#', flat: 'Db', octave: 5, position: 7 },
+            { note: 'D#', sharp: 'D#', flat: 'Eb', octave: 5, position: 8 },
+            { note: 'F#', sharp: 'F#', flat: 'Gb', octave: 5, position: 10 },
+            { note: 'G#', sharp: 'G#', flat: 'Ab', octave: 5, position: 11 },
+            { note: 'A#', sharp: 'A#', flat: 'Bb', octave: 5, position: 12 },
+            { note: 'C#', sharp: 'C#', flat: 'Db', octave: 6, position: 14 },
+            { note: 'D#', sharp: 'D#', flat: 'Eb', octave: 6, position: 15 },
+            { note: 'F#', sharp: 'F#', flat: 'Gb', octave: 6, position: 17 }
+        ];
+
+        function transposeNote(note, fromRoot, toRoot) {
+            const fromIndex = NOTES.indexOf(fromRoot);
+            const toIndex = NOTES.indexOf(toRoot);
+            const noteIndex = NOTES.indexOf(note);
+            const interval = toIndex - fromIndex;
+            let newIndex = (noteIndex + interval) % 12;
+            if (newIndex < 0) newIndex += 12;
+            return NOTES[newIndex];
+        }
+
+        function getInversion(notes, rootNote) {
+            if (notes.length === 0) return null;
+            
+            // Get the lowest note (by octave and pitch)
+            let lowestNote = notes[0];
+            let lowestValue = Infinity;
+            
+            notes.forEach(noteStr => {
+                const note = noteStr.replace(/[0-9]/g, '');
+                const octave = parseInt(noteStr.match(/[0-9]/g)[0]);
+                const value = octave * 12 + NOTES.indexOf(note);
+                if (value < lowestValue) {
+                    lowestValue = value;
+                    lowestNote = noteStr;
+                }
+            });
+            
+            const bassNote = lowestNote.replace(/[0-9]/g, '');
+            
+            // If bass note is the root, it's root position
+            if (bassNote === rootNote) {
+                return null; // Root position, no inversion label needed
+            }
+            
+            // Get unique notes in the chord (without octaves)
+            const uniqueNotes = [...new Set(notes.map(n => n.replace(/[0-9]/g, '')))];
+            
+            // Calculate intervals from root
+            const rootIndex = NOTES.indexOf(rootNote);
+            const noteIntervals = uniqueNotes.map(n => {
+                const noteIndex = NOTES.indexOf(n);
+                let interval = noteIndex - rootIndex;
+                if (interval < 0) interval += 12;
+                return { note: n, interval };
+            }).sort((a, b) => a.interval - b.interval);
+            
+            // Find which chord tone is in the bass
+            const bassInterval = noteIntervals.find(ni => ni.note === bassNote)?.interval;
+            
+            // Determine inversion number
+            // Root = 0, 3rd = 1st inv, 5th = 2nd inv, 7th = 3rd inv, etc.
+            const inversionMap = {
+                0: null, // root position
+                3: '1st inversion', // minor 3rd
+                4: '1st inversion', // major 3rd
+                5: '2nd inversion', // 4th (sus4)
+                6: '2nd inversion', // dim 5th
+                7: '2nd inversion', // perfect 5th
+                8: '2nd inversion', // aug 5th
+                9: '3rd inversion', // 6th
+                10: '3rd inversion', // minor 7th
+                11: '3rd inversion', // major 7th
+                2: '4th inversion', // 9th
+            };
+            
+            return inversionMap[bassInterval] || 'inversion';
+        }
+
+        function identifyChord(notes) {
+            if (notes.length === 0) return null;
+            
+            // Extract unique note names (without octave numbers) and sort
+            const uniqueNotes = [...new Set(notes.map(n => n.replace(/[0-9]/g, '')))];
+            if (uniqueNotes.length < 2) return null;
+
+            // Try each note as potential root and collect all valid interpretations
+            let allMatches = [];
+
+            for (let rootNote of uniqueNotes) {
+                const rootIndex = NOTES.indexOf(rootNote);
+                
+                // Calculate intervals for this root (keeping actual semitone distances)
+                const intervals = uniqueNotes.map(n => {
+                    const noteIndex = NOTES.indexOf(n);
+                    let interval = noteIndex - rootIndex;
+                    if (interval < 0) interval += 12;
+                    return interval;
+                }).sort((a, b) => a - b);
+
+                // Comprehensive chord patterns (using actual intervals within one octave 0-11)
+                const patterns = {
+                    // 13th chords - 7 notes with #11
+                    'maj13(#11)': [0, 2, 4, 6, 7, 9, 11], // D, E, F#, G#, A, B, C#
+                    
+                    // 13th chords - 6 notes
+                    'maj13': [0, 2, 4, 7, 9, 11], // D, E, F#, A, B, C#
+                    'min13': [0, 2, 3, 7, 9, 10], 
+                    '13': [0, 2, 4, 7, 9, 10], 
+                    '7b13': [0, 4, 7, 8, 10],
+                    'min7b13': [0, 3, 7, 8, 10],
+                    
+                    // 11th chords - 6 notes with #11
+                    'maj11(#11)': [0, 2, 4, 6, 7, 11], // D, E, F#, G#, A, C#
+                    
+                    // 11th chords - 6 notes with natural 11
+                    'maj11': [0, 2, 4, 5, 7, 11], 
+                    'min11': [0, 2, 3, 5, 7, 10], 
+                    '11': [0, 2, 4, 5, 7, 10], 
+                    
+                    // 11 chords - 5 notes
+                    'maj7#11': [0, 4, 6, 7, 11], 
+                    '7#11': [0, 4, 6, 7, 10], 
+                    '9sus4': [0, 2, 5, 7, 10], 
+                    
+                    // 9th chords - 5 notes
+                    'maj9': [0, 2, 4, 7, 11], 
+                    'min9': [0, 2, 3, 7, 10], 
+                    '9': [0, 2, 4, 7, 10], 
+                    '7b9': [0, 1, 4, 7, 10], 
+                    '7#9': [0, 3, 4, 7, 10], 
+                    'min7b9': [0, 1, 3, 7, 10], 
+                    'maj7#9': [0, 3, 4, 7, 11], 
+                    
+                    // Altered dominants
+                    '7alt': [0, 1, 3, 4, 6, 10], 
+                    '7b5b9': [0, 1, 4, 6, 10], 
+                    '7b5#9': [0, 3, 4, 6, 10], 
+                    '7#5b9': [0, 1, 4, 8, 10], 
+                    '7#5#9': [0, 3, 4, 8, 10], 
+                    '7b5': [0, 4, 6, 10], 
+                    '7#5': [0, 4, 8, 10], 
+                    
+                    // 7th chords - 4 notes
+                    'maj7': [0, 4, 7, 11], 
+                    'min7': [0, 3, 7, 10], 
+                    '7': [0, 4, 7, 10], 
+                    'min7b5': [0, 3, 6, 10], 
+                    'dim7': [0, 3, 6, 9], 
+                    'minMaj7': [0, 3, 7, 11], 
+                    'aug7': [0, 4, 8, 10], 
+                    'augMaj7': [0, 4, 8, 11], 
+                    '7sus4': [0, 5, 7, 10], 
+                    
+                    // 6th chords - 4 notes
+                    '6': [0, 4, 7, 9], 
+                    'min6': [0, 3, 7, 9], 
+                    
+                    // Add chords - 4 notes
+                    'add9': [0, 2, 4, 7], 
+                    'minadd9': [0, 2, 3, 7], 
+                    'add11': [0, 4, 5, 7], 
+                    
+                    // Triads - 3 notes
+                    'sus4': [0, 5, 7], 
+                    'sus2': [0, 2, 7], 
+                    'aug': [0, 4, 8], 
+                    'dim': [0, 3, 6], 
+                    'minor': [0, 3, 7], 
+                    'major': [0, 4, 7], 
+                    
+                    // Power chord - 2 notes
+                    '5': [0, 7],
+                };
+
+                // Sort patterns by complexity (longest first for best matching)
+                const sortedPatterns = Object.entries(patterns).sort((a, b) => b[1].length - a[1].length);
+
+                for (let [type, pattern] of sortedPatterns) {
+                    // Check for exact match
+                    if (pattern.length === intervals.length) {
+                        // Sort both for comparison since notes can be in any order
+                        const sortedPattern = [...pattern].sort((a, b) => a - b);
+                        const sortedIntervals = [...intervals].sort((a, b) => a - b);
+                        
+                        const isMatch = sortedPattern.every((p, idx) => p === sortedIntervals[idx]);
+                        if (isMatch) {
+                            const quality = pattern.length * 100; // Prefer longer, more specific chords
+                            allMatches.push({ root: rootNote, type, quality });
+                        }
+                    }
+                }
+            }
+
+            // Return all unique matches sorted by quality (most complex first)
+            if (allMatches.length > 0) {
+                // Remove duplicate chord names (same root and type)
+                const seen = new Set();
+                const uniqueMatches = allMatches.filter(match => {
+                    const key = `${match.root}${match.type}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+                
+                uniqueMatches.sort((a, b) => b.quality - a.quality);
+                return uniqueMatches;
+            }
+
+            // Fallback: just show root note
+            return [{ root: uniqueNotes[0], type: '', quality: 0 }];
+        }
+
+        function ChordTransposer() {
+            const [selectedNotes, setSelectedNotes] = useState([]);
+            const [toRoot, setToRoot] = useState('');
+            const [showTransposed, setShowTransposed] = useState(false);
+            const transposedSectionRef = useRef(null);
+
+            const toggleNote = (note, octave) => {
+                const noteStr = `${note}${octave}`;
+                if (selectedNotes.includes(noteStr)) {
+                    setSelectedNotes(selectedNotes.filter(n => n !== noteStr));
+                } else {
+                    setSelectedNotes([...selectedNotes, noteStr]);
+                    playNote(note, octave);
+                }
+                // Hide transposed results when input changes
+                setShowTransposed(false);
+            };
+
+            const handleGo = () => {
+                if (toRoot && selectedNotes.length > 0) {
+                    setShowTransposed(true);
+                    // Scroll to transposed section after a short delay to let it render
+                    setTimeout(() => {
+                        if (transposedSectionRef.current) {
+                            transposedSectionRef.current.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'start' 
+                            });
+                        }
+                    }, 100);
+                }
+            };
+
+            const originalChordMatches = identifyChord(selectedNotes);
+            const originalChord = originalChordMatches && originalChordMatches.length > 0 ? originalChordMatches[0] : null;
+            const fromRoot = originalChord ? originalChord.root : 'C';
+            
+            // Find the lowest note to use as reference for transposition
+            let lowestNote = selectedNotes.length > 0 ? selectedNotes[0] : null;
+            let lowestValue = Infinity;
+            
+            selectedNotes.forEach(noteStr => {
+                const note = noteStr.replace(/[0-9]/g, '');
+                const octave = parseInt(noteStr.match(/[0-9]/g)[0]);
+                const value = octave * 12 + NOTES.indexOf(note);
+                if (value < lowestValue) {
+                    lowestValue = value;
+                    lowestNote = noteStr;
+                }
+            });
+            
+            const transposedNotes = selectedNotes.map(noteStr => {
+                const note = noteStr.replace(/[0-9]/g, '');
+                const octave = parseInt(noteStr.match(/[0-9]/g)[0]);
+                
+                // Calculate semitone distance from C4 for this note
+                const noteValue = octave * 12 + NOTES.indexOf(note);
+                
+                // Calculate the transposition interval
+                const fromIndex = NOTES.indexOf(fromRoot);
+                const toIndex = NOTES.indexOf(toRoot);
+                let interval = toIndex - fromIndex;
+                
+                // Apply transposition
+                let newValue = noteValue + interval;
+                
+                // Calculate new octave and note
+                const newOctave = Math.floor(newValue / 12);
+                let newNoteIndex = newValue % 12;
+                if (newNoteIndex < 0) newNoteIndex += 12;
+                
+                return `${NOTES[newNoteIndex]}${newOctave}`;
+            });
+
+            const transposedChordMatches = identifyChord(transposedNotes);
+            const transposedChord = transposedChordMatches && transposedChordMatches.length > 0 ? transposedChordMatches[0] : null;
+            const originalInversion = originalChord ? getInversion(selectedNotes, originalChord.root) : null;
+            const transposedInversion = transposedChord ? getInversion(transposedNotes, transposedChord.root) : null;
+
+            const reset = () => {
+                setSelectedNotes([]);
+                setShowTransposed(false);
+            };
+
+            const Piano = ({ notes, title, interactive = false }) => {
+                const isActive = (note, octave) => {
+                    const noteStr = `${note}${octave}`;
+                    return notes.includes(noteStr);
+                };
+
+                return (
+                    <div>
+                        <div className="section-title">{title}</div>
+                        <div className="piano">
+                            <div className="octave">
+                                {WHITE_KEYS.map((key, idx) => (
+                                    <div
+                                        key={`white-${idx}`}
+                                        className={`key white-key ${isActive(key.note, key.octave) ? 'active' : ''}`}
+                                        onClick={() => interactive && toggleNote(key.note, key.octave)}
+                                    >
+                                        {key.note}
+                                    </div>
+                                ))}
+                                {BLACK_KEYS.map((key, idx) => (
+                                    <div
+                                        key={`black-${idx}`}
+                                        className={`key black-key ${isActive(key.note, key.octave) ? 'active' : ''}`}
+                                        style={{ left: `${key.position * 46 + 31}px` }}
+                                        onClick={() => interactive && toggleNote(key.note, key.octave)}
+                                    >
+                                        <span>{key.sharp}</span>
+                                        <span>{key.flat}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="container">
+                    <header>
+                        <h1>The Piano Keys Chord Transposition Wizard</h1>
+                        <p className="subtitle">
+                            1. Click the keys on the piano to build your chord.<br/>
+                            2. Click on the drop down menu to choose a new note to build the same chord on.<br/>
+                            3. You will see the new chord on the lower keyboard.
+                        </p>
+                    </header>
+
+                    <div className="section">
+                        <Piano 
+                            notes={selectedNotes} 
+                            title="Input Your Chord" 
+                            interactive={true}
+                        />
+                        {selectedNotes.length === 0 && (
+                            <p className="instruction">Click the piano keys above to select notes</p>
+                        )}
+                        {originalChord && (
+                            <div className="chord-info">
+                                <div className="chord-name">
+                                    {originalChordMatches.map((match, idx) => {
+                                        const inv = getInversion(selectedNotes, match.root);
+                                        return (
+                                            <span key={idx}>
+                                                {idx > 0 && <span style={{fontSize: '1.4rem', margin: '0 0.5rem', color: '#999', fontWeight: 400}}> or </span>}
+                                                <span>
+                                                    {match.root}{match.type}
+                                                    {inv && <span style={{fontSize: '1rem', marginLeft: '0.3rem', color: '#666'}}>({inv})</span>}
+                                                </span>
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                                <div className="chord-notes">
+                                    Notes: {selectedNotes.map(n => n.replace(/[0-9]/g, '')).join(', ')}
+                                </div>
+                                <button className="play-btn" onClick={() => playChord(selectedNotes)}>
+                                    🔊 Play Chord
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="section">
+                        <div className="key-selector">
+                            <div className="transpose-group">
+                                <label>Build the same chord starting on:</label>
+                                <div style={{display: 'flex', gap: '1rem', alignItems: 'center'}}>
+                                    <select value={toRoot} onChange={(e) => {setToRoot(e.target.value); setShowTransposed(false);}}>
+                                        <option value="">Select a note...</option>
+                                        {NOTES.map(note => (
+                                            <option key={note} value={note}>{note}</option>
+                                        ))}
+                                    </select>
+                                    <button 
+                                        className="go-btn" 
+                                        onClick={handleGo}
+                                        disabled={!toRoot || selectedNotes.length === 0}
+                                    >
+                                        Go
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {showTransposed && selectedNotes.length > 0 && toRoot && (
+                        <div className="section" ref={transposedSectionRef}>
+                            <Piano 
+                                notes={transposedNotes} 
+                                title="Transposed Result" 
+                                interactive={false}
+                            />
+                            {transposedChord && (
+                                <div className="chord-info">
+                                    <div className="chord-name">
+                                        {transposedChordMatches.map((match, idx) => {
+                                            const inv = getInversion(transposedNotes, match.root);
+                                            return (
+                                                <span key={idx}>
+                                                    {idx > 0 && <span style={{fontSize: '1.4rem', margin: '0 0.5rem', color: '#999', fontWeight: 400}}> or </span>}
+                                                    <span>
+                                                        {match.root}{match.type}
+                                                        {inv && <span style={{fontSize: '1rem', marginLeft: '0.3rem', color: '#666'}}>({inv})</span>}
+                                                    </span>
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="chord-notes">
+                                        Notes: {transposedNotes.map(n => n.replace(/[0-9]/g, '')).join(', ')}
+                                    </div>
+                                    <div className="button-group">
+                                        <button className="play-btn" onClick={() => playChord(transposedNotes)}>
+                                            🔊 Play Transposed Chord
+                                        </button>
+                                        <button className="reset-btn" onClick={reset}>Clear & Start Over</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <footer>
+                        <div className="copyright">Copyright © 2026 The Piano Keys. All rights reserved.</div>
+                        <div>
+                            <a href="https://www.thepianokeys.com/" target="_blank" rel="noopener noreferrer">
+                                ThePianoKeys.com
+                            </a>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+    ReactDOM.render(<ChordTransposer />, document.getElementById('root'));
+</script>
+</body>
+</html>
