@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Piano Keys Chord Progression Transposer</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cream: #faf8f3;
+            --charcoal: #2a2a2a;
+            --accent: #c8553d;
+            --accent-light: #e8855f;
+            --sage: #8b9d83;
+            --border: #d4c5b9;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--charcoal);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(200, 85, 61, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 157, 131, 0.04) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--charcoal);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #6b6b6b;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .section {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-family: 'Crimson Pro', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--charcoal);
+        }
+
+        .chord-input-container {
+            margin-bottom: 2rem;
+        }
+
+        .chord-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.3rem;
+            font-family: 'DM Sans', sans-serif;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .chord-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .chord-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            min-height: 50px;
+        }
+
+        .chord-chip {
+            background: var(--accent-light);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chord-chip button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-light);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--sage);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7a8b74;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 157, 131, 0.3);
+        }
+
+        select {
+            padding: 0.75rem 1rem;
+            font-size: 1.1rem;
+            font-family: 'DM Sans', sans-serif;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .error-message {
+            color: #d32f2f;
+            padding: 1rem;
+            background: #ffebee;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem 1rem;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        // Music theory utilities
+        const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const NOTE_FLATS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+        
+        const MAJOR_KEYS = ['A♭ Major', 'A Major', 'B♭ Major', 'B Major', 'C Major', 'C# Major', 
+                            'D♭ Major', 'D Major', 'E♭ Major', 'E Major', 'F Major', 'F# Major', 
+                            'G♭ Major', 'G Major'];
+        const MINOR_KEYS = ['A♭ minor', 'A minor', 'B♭ minor', 'B minor', 'C minor', 'C# minor',
+                            'D♭ minor', 'D minor', 'E♭ minor', 'E minor', 'F minor', 'F# minor',
+                            'G♭ minor', 'G minor'];
+        
+        const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11]; // intervals
+        const INTERVALS = [-11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+        function getKeyRoot(keyString) {
+            // Extract root note from "A♭ Major" or "A minor" format
+            if (keyString === 'Not Sure') return null;
+            
+            const parts = keyString.split(' ');
+            const root = parts[0];
+            
+            // Convert ♭ symbol to 'b' and ♯ to '#'
+            return root.replace('♭', 'b').replace('♯', '#');
+        }
+
+        function respellChord(chord) {
+            // Toggle between sharp and flat enharmonic equivalents
+            const enharmonicMap = {
+                'C#': 'Db', 'Db': 'C#',
+                'D#': 'Eb', 'Eb': 'D#',
+                'F#': 'Gb', 'Gb': 'F#',
+                'G#': 'Ab', 'Ab': 'G#',
+                'A#': 'Bb', 'Bb': 'A#'
+            };
+            
+            // Use placeholders to avoid double replacement
+            let respelled = chord;
+            const placeholder = '___TEMP___';
+            
+            // First pass: replace all with placeholders
+            const replacements = [];
+            Object.keys(enharmonicMap).forEach(note => {
+                if (respelled.includes(note)) {
+                    const tempMarker = placeholder + replacements.length;
+                    respelled = respelled.replace(new RegExp(note.replace('#', '\\#').replace('b', '\\b'), 'g'), tempMarker);
+                    replacements.push({marker: tempMarker, newNote: enharmonicMap[note]});
+                }
+            });
+            
+            // Second pass: replace placeholders with target notes
+            replacements.forEach(({marker, newNote}) => {
+                respelled = respelled.replace(new RegExp(marker, 'g'), newNote);
+            });
+            
+            return respelled;
+        }
+
+        function parseChord(chordSymbol) {
+            if (!chordSymbol) return null;
+            
+            // Handle slash chords
+            let bassNote = null;
+            if (chordSymbol.includes('/')) {
+                const parts = chordSymbol.split('/');
+                chordSymbol = parts[0];
+                bassNote = parts[1];
+            }
+            
+            // Extract root note
+            let root = chordSymbol[0].toUpperCase();
+            let remaining = chordSymbol.slice(1);
+            
+            // Check for sharp or flat
+            if (remaining[0] === '#' || remaining[0] === 'b') {
+                root += remaining[0];
+                remaining = remaining.slice(1);
+            }
+            
+            // Normalize root
+            if (!NOTES.includes(root) && !NOTE_FLATS.includes(root)) {
+                return null;
+            }
+            
+            return {
+                root,
+                quality: remaining || 'major',
+                bassNote,
+                original: chordSymbol + (bassNote ? '/' + bassNote : '')
+            };
+        }
+
+        function getEnharmonicSpelling(note, targetKey) {
+            // Define which keys prefer flats vs sharps
+            const flatKeys = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'];
+            const useFlats = flatKeys.includes(targetKey);
+            
+            const enharmonicMap = {
+                'C#': useFlats ? 'Db' : 'C#',
+                'D#': useFlats ? 'Eb' : 'D#',
+                'F#': useFlats ? 'Gb' : 'F#',
+                'G#': useFlats ? 'Ab' : 'G#',
+                'A#': useFlats ? 'Bb' : 'A#',
+                'Db': 'Db',
+                'Eb': 'Eb',
+                'Gb': 'Gb',
+                'Ab': 'Ab',
+                'Bb': 'Bb'
+            };
+            
+            return enharmonicMap[note] || note;
+        }
+
+        function transposeNote(note, interval, targetKey = null) {
+            // Convert flats to sharps for calculation
+            let noteIndex = NOTES.indexOf(note);
+            if (noteIndex === -1) {
+                noteIndex = NOTE_FLATS.indexOf(note);
+                if (noteIndex !== -1) {
+                    note = NOTES[noteIndex];
+                }
+            }
+            
+            noteIndex = NOTES.indexOf(note);
+            let newIndex = (noteIndex + interval) % 12;
+            if (newIndex < 0) newIndex += 12;
+            
+            const transposedNote = NOTES[newIndex];
+            return targetKey ? getEnharmonicSpelling(transposedNote, targetKey) : transposedNote;
+        }
+
+        function transposeChord(chord, interval, targetKey = null) {
+            if (!chord) return null;
+            
+            const newRoot = transposeNote(chord.root, interval, targetKey);
+            const newBass = chord.bassNote ? transposeNote(chord.bassNote, interval, targetKey) : null;
+            
+            return {
+                root: newRoot,
+                quality: chord.quality,
+                bassNote: newBass,
+                original: newRoot + chord.quality + (newBass ? '/' + newBass : '')
+            };
+        }
+
+        function getRomanNumeral(chord, keyRoot) {
+            if (!chord) return '';
+            
+            const keyIndex = NOTES.indexOf(keyRoot) !== -1 ? NOTES.indexOf(keyRoot) : NOTE_FLATS.indexOf(keyRoot);
+            let chordIndex = NOTES.indexOf(chord.root);
+            if (chordIndex === -1) {
+                chordIndex = NOTE_FLATS.indexOf(chord.root);
+            }
+            
+            let interval = chordIndex - keyIndex;
+            if (interval < 0) interval += 12;
+            
+            // Roman numerals with borrowed chords
+            const romanMap = {
+                0: 'I', 1: '♭II', 2: 'II', 3: '♭III', 4: 'III',
+                5: 'IV', 6: '♭V', 7: 'V', 8: '♭VI', 9: 'VI',
+                10: '♭VII', 11: 'VII'
+            };
+            
+            let roman = romanMap[interval] || '';
+            
+            // Determine case based on chord QUALITY, not scale degree
+            const quality = chord.quality.toLowerCase();
+            
+            // Check if it's a minor or diminished chord (lowercase)
+            const isMinor = (quality.includes('m') || quality.includes('min')) && 
+                           !quality.includes('maj') && 
+                           !quality.includes('augm');
+            const isDim = quality.includes('dim');
+            
+            // Everything else is uppercase (Major, Dominant, Augmented, sus, add, etc.)
+            if (isMinor || isDim) {
+                roman = roman.toLowerCase();
+            }
+            // Otherwise keep uppercase (already set)
+            
+            // Add quality symbols
+            if (isDim) {
+                roman = roman + '°';
+            }
+            if (quality.includes('aug')) {
+                roman = roman + '+';
+            }
+            
+            // Add extensions
+            if (quality.includes('maj7') || quality === 'maj7') {
+                roman = roman + 'maj7';
+            } else if (quality.includes('7')) {
+                roman = roman + '7';
+            }
+            if (quality.includes('9')) {
+                roman = roman + '9';
+            }
+            if (quality.includes('11')) {
+                roman = roman + '11';
+            }
+            if (quality.includes('13')) {
+                roman = roman + '13';
+            }
+            if (quality.includes('add')) {
+                const addMatch = quality.match(/add(\d+)/);
+                if (addMatch) {
+                    roman = roman + 'add' + addMatch[1];
+                }
+            }
+            
+            return roman;
+        }
+
+        function ChordDisplay({ chords, keyRoot, showRomanNumerals, respelledChords = null }) {
+            return (
+                <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '3rem',
+                    justifyContent: 'center',
+                    padding: '2rem',
+                    background: '#fafafa',
+                    borderRadius: '12px'
+                }}>
+                    {chords.map((chord, idx) => {
+                        const parsed = parseChord(chord);
+                        if (!parsed) return null;
+                        
+                        return (
+                            <div key={idx} style={{
+                                textAlign: 'center',
+                                minWidth: '80px'
+                            }}>
+                                {/* Original chord symbol */}
+                                <div style={{
+                                    fontSize: '2rem',
+                                    fontWeight: 'bold',
+                                    color: '#c8553d',
+                                    marginBottom: respelledChords ? '0.5rem' : (showRomanNumerals ? '1.5rem' : '0'),
+                                    fontFamily: "'Crimson Pro', serif"
+                                }}>
+                                    {chord}
+                                </div>
+                                
+                                {/* Respelled chord symbol (if provided) */}
+                                {respelledChords && (
+                                    <div style={{
+                                        fontSize: '2rem',
+                                        fontWeight: 'bold',
+                                        color: '#c8553d',
+                                        marginBottom: showRomanNumerals ? '1.5rem' : '0',
+                                        fontFamily: "'Crimson Pro', serif"
+                                    }}>
+                                        {respelledChords[idx]}
+                                    </div>
+                                )}
+                                
+                                {/* Roman numeral - only if showRomanNumerals is true */}
+                                {showRomanNumerals && (
+                                    <div style={{
+                                        fontSize: '1.8rem',
+                                        color: '#666',
+                                        fontStyle: 'italic',
+                                        fontFamily: "'Crimson Pro', serif"
+                                    }}>
+                                        {getRomanNumeral(parsed, keyRoot)}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        }
+
+        function ChordProgressionTransposer() {
+            const [chordInput, setChordInput] = useState('');
+            const [chords, setChords] = useState([]);
+            const [transposeMode, setTransposeMode] = useState('key');
+            const [interval, setInterval] = useState(0);
+            const [targetKey, setTargetKey] = useState('C Major');
+            const [originalKey, setOriginalKey] = useState('Not Sure');
+            const [allTranspositions, setAllTranspositions] = useState([]); // Array of {chords, keyRoot, showRomanNumerals, label}
+            const [respelledIndices, setRespelledIndices] = useState(new Set()); // Track which transpositions are respelled
+            const [error, setError] = useState('');
+            const inputRef = useRef(null);
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addChord();
+                }
+            };
+
+            const addChord = () => {
+                if (!chordInput.trim()) return;
+                if (chords.length >= 16) {
+                    setError('Maximum 16 chords allowed');
+                    return;
+                }
+                
+                const parsed = parseChord(chordInput.trim());
+                if (!parsed) {
+                    setError('Invalid chord symbol. Please check and try again.');
+                    return;
+                }
+                
+                setChords([...chords, chordInput.trim()]);
+                setChordInput('');
+                setError('');
+                setTransposedChords([]);
+            };
+
+            const removeChord = (index) => {
+                setChords(chords.filter((_, i) => i !== index));
+                setAllTranspositions([]);
+            };
+
+            const handleTranspose = () => {
+                if (chords.length === 0) {
+                    setError('Please enter at least one chord');
+                    return;
+                }
+                
+                if (allTranspositions.length >= 12) {
+                    setError('Maximum 12 transpositions reached. Please clear to start over.');
+                    return;
+                }
+                
+                let transposeInterval;
+                let keyForSpelling;
+                let label;
+                let keyRootForRomanNumerals;
+                
+                if (transposeMode === 'key') {
+                    if (originalKey === 'Not Sure') {
+                        setError('Oops! To transpose by key you must first choose your original key. Don\'t know the original key? No problem! Select "Transpose By Interval."');
+                        return;
+                    }
+                    const originalRoot = getKeyRoot(originalKey);
+                    const targetRoot = getKeyRoot(targetKey);
+                    const originalIdx = NOTES.indexOf(originalRoot) !== -1 ? NOTES.indexOf(originalRoot) : NOTE_FLATS.indexOf(originalRoot);
+                    const targetIdx = NOTES.indexOf(targetRoot) !== -1 ? NOTES.indexOf(targetRoot) : NOTE_FLATS.indexOf(targetRoot);
+                    transposeInterval = targetIdx - originalIdx;
+                    if (transposeInterval < 0) transposeInterval += 12;
+                    keyForSpelling = targetRoot;
+                    keyRootForRomanNumerals = targetRoot;
+                    label = targetKey;
+                } else {
+                    // By interval mode
+                    transposeInterval = parseInt(interval);
+                    // For spelling, use original key if known, otherwise use C
+                    const originalRoot = originalKey !== 'Not Sure' ? getKeyRoot(originalKey) : 'C';
+                    keyForSpelling = originalRoot;
+                    keyRootForRomanNumerals = originalRoot;
+                    
+                    // Create label from interval
+                    const intervalNames = {
+                        '0': 'Unison', '1': 'm2 up', '2': 'M2 up', '3': 'm3 up', '4': 'M3 up',
+                        '5': 'P4 up', '6': 'A4/d5 up', '7': 'P5 up', '8': 'm6 up', '9': 'M6 up',
+                        '10': 'm7 up', '11': 'M7 up',
+                        '-1': 'm2 down', '-2': 'M2 down', '-3': 'm3 down', '-4': 'M3 down',
+                        '-5': 'P4 down', '-6': 'A4/d5 down', '-7': 'P5 down', '-8': 'm6 down',
+                        '-9': 'M6 down', '-10': 'm7 down', '-11': 'M7 down'
+                    };
+                    label = intervalNames[interval] || '';
+                }
+                
+                const transposed = chords.map(chord => {
+                    const parsed = parseChord(chord);
+                    const transposedChord = transposeChord(parsed, transposeInterval, keyForSpelling);
+                    return transposedChord ? transposedChord.original : chord;
+                });
+                
+                const newTransposition = {
+                    chords: transposed,
+                    keyRoot: keyRootForRomanNumerals,
+                    showRomanNumerals: originalKey !== 'Not Sure',
+                    label: label
+                };
+                
+                setAllTranspositions([...allTranspositions, newTransposition]);
+                setError('');
+            };
+
+            const reset = () => {
+                setChords([]);
+                setChordInput('');
+                setAllTranspositions([]);
+                setRespelledIndices(new Set());
+                setError('');
+            };
+
+            const toggleRespell = (index) => {
+                const newRespelled = new Set(respelledIndices);
+                if (newRespelled.has(index)) {
+                    newRespelled.delete(index);
+                } else {
+                    newRespelled.add(index);
+                }
+                setRespelledIndices(newRespelled);
+            };
+
+            return (
+                <div className="container">
+                    <header>
+                        <h1>The Piano Keys Chord Progression Transposer</h1>
+                        <p className="subtitle">
+                            Enter your chord progression (up to 16 chords) and transpose it to any key
+                        </p>
+                    </header>
+
+                    <div className="section">
+                        <div className="section-title">Enter Your Chord Progression <span style={{fontSize: '1rem', fontWeight: 'normal', color: '#999'}}>(One Chord At A Time)</span></div>
+                        
+                        <div style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', alignItems: 'start'}}>
+                            {/* Left side - Chord input */}
+                            <div className="chord-input-container">
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    className="chord-input"
+                                    placeholder="Type a chord (e.g., Cmaj7, Dm, G7/B) and press Enter after each chord..."
+                                    value={chordInput}
+                                    onChange={(e) => setChordInput(e.target.value)}
+                                    onKeyDown={handleKeyPress}
+                                />
+                                
+                                <div className="chord-list">
+                                    {chords.length === 0 ? (
+                                        <span style={{color: '#999', fontStyle: 'italic'}}>Your chords will appear here...</span>
+                                    ) : (
+                                        chords.map((chord, idx) => (
+                                            <div key={idx} className="chord-chip">
+                                                {chord}
+                                                <button onClick={() => removeChord(idx)}>×</button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                
+                                <div className="button-group">
+                                    <button className="btn btn-secondary" onClick={reset}>
+                                        Clear All
+                                    </button>
+                                    <span style={{color: '#999', fontSize: '0.9rem'}}>
+                                        {chords.length}/16 chords
+                                    </span>
+                                </div>
+
+                                {error && <div className="error-message">{error}</div>}
+                            </div>
+                            
+                            {/* Right side - Transpose settings */}
+                            <div>
+                                <div style={{marginBottom: '1.5rem'}}>
+                                    <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 600}}>Original Key:</label>
+                                    <select value={originalKey} onChange={(e) => setOriginalKey(e.target.value)} style={{width: '100%'}}>
+                                        <option value="Not Sure">Select Key</option>
+                                        <optgroup label="Major Keys">
+                                            {MAJOR_KEYS.map(key => (
+                                                <option key={key} value={key}>{key}</option>
+                                            ))}
+                                        </optgroup>
+                                        <optgroup label="Minor Keys">
+                                            {MINOR_KEYS.map(key => (
+                                                <option key={key} value={key}>{key}</option>
+                                            ))}
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                
+                                <div style={{marginBottom: '1.5rem'}}>
+                                    <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 600}}>Transpose:</label>
+                                    <select value={transposeMode} onChange={(e) => setTransposeMode(e.target.value)} style={{width: '100%'}}>
+                                        <option value="key">By Key</option>
+                                        <option value="interval">By Interval</option>
+                                    </select>
+                                </div>
+                                
+                                {transposeMode === 'interval' ? (
+                                    <div style={{marginBottom: '1.5rem'}}>
+                                        <select value={interval} onChange={(e) => setInterval(e.target.value)} style={{width: '100%'}}>
+                                            <option value="0">Unison (same key)</option>
+                                            <option value="1">Minor 2nd up</option>
+                                            <option value="2">Major 2nd up</option>
+                                            <option value="3">Minor 3rd up</option>
+                                            <option value="4">Major 3rd up</option>
+                                            <option value="5">Perfect 4th up</option>
+                                            <option value="6">Augmented 4th up</option>
+                                            <option value="6">Diminished 5th up</option>
+                                            <option value="7">Perfect 5th up</option>
+                                            <option value="8">Minor 6th up</option>
+                                            <option value="9">Major 6th up</option>
+                                            <option value="10">Minor 7th up</option>
+                                            <option value="11">Major 7th up</option>
+                                            <option value="-1">Minor 2nd down</option>
+                                            <option value="-2">Major 2nd down</option>
+                                            <option value="-3">Minor 3rd down</option>
+                                            <option value="-4">Major 3rd down</option>
+                                            <option value="-5">Perfect 4th down</option>
+                                            <option value="-6">Augmented 4th down</option>
+                                            <option value="-6">Diminished 5th down</option>
+                                            <option value="-7">Perfect 5th down</option>
+                                            <option value="-8">Minor 6th down</option>
+                                            <option value="-9">Major 6th down</option>
+                                            <option value="-10">Minor 7th down</option>
+                                            <option value="-11">Major 7th down</option>
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <div style={{marginBottom: '1.5rem'}}>
+                                        <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 600}}>To:</label>
+                                        <select value={targetKey} onChange={(e) => setTargetKey(e.target.value)} style={{width: '100%'}}>
+                                            <optgroup label="Major Keys">
+                                                {MAJOR_KEYS.map(key => (
+                                                    <option key={key} value={key}>{key}</option>
+                                                ))}
+                                            </optgroup>
+                                            <optgroup label="Minor Keys">
+                                                {MINOR_KEYS.map(key => (
+                                                    <option key={key} value={key}>{key}</option>
+                                                ))}
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                )}
+                                
+                                <button className="btn btn-primary" onClick={handleTranspose} style={{width: '100%'}}>
+                                    Go
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {allTranspositions.length > 0 && (
+                        <div className="section">
+                            <div className="section-title">Transposed Progressions ({allTranspositions.length}/12)</div>
+                            
+                            <div style={{marginBottom: '2rem', fontSize: '1.2rem'}}>
+                                <strong>Original:</strong> {chords.join(' - ')}
+                            </div>
+                            
+                            {allTranspositions.map((transposition, idx) => {
+                                const isRespelled = respelledIndices.has(idx);
+                                const respelledChords = isRespelled 
+                                    ? transposition.chords.map(c => respellChord(c))
+                                    : null;
+                                
+                                return (
+                                    <div key={idx} style={{marginBottom: '3rem'}}>
+                                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                                            <div style={{
+                                                fontSize: '1.3rem',
+                                                fontWeight: 'bold',
+                                                color: '#8b9d83',
+                                                fontFamily: "'Crimson Pro', serif"
+                                            }}>
+                                                {transposition.label}
+                                            </div>
+                                            <button 
+                                                className="btn btn-secondary" 
+                                                onClick={() => toggleRespell(idx)}
+                                                style={{padding: '0.5rem 1rem', fontSize: '0.9rem'}}
+                                            >
+                                                {isRespelled ? 'Hide Respelling' : 'Respell Chords'}
+                                            </button>
+                                        </div>
+                                        <ChordDisplay 
+                                            chords={transposition.chords} 
+                                            keyRoot={transposition.keyRoot}
+                                            showRomanNumerals={transposition.showRomanNumerals}
+                                            respelledChords={respelledChords}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    <footer>
+                        <div style={{marginBottom: '0.5rem'}}>Copyright © 2026 The Piano Keys. All rights reserved.</div>
+                        <div>
+                            <a href="https://www.thepianokeys.com/" target="_blank" rel="noopener noreferrer">
+                                ThePianoKeys.com
+                            </a>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ChordProgressionTransposer />, document.getElementById('root'));
+    </script>
+</body>
+</html>
